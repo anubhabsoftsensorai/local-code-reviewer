@@ -378,13 +378,23 @@ const analyzeJSTS = (code: string, language: string): ReviewResult => {
         });
       },
 
-      // Magic numbers
+      // Magic numbers — only flag large, clearly-suspicious values (>= 100)
+      // Small numbers (0-99) are almost always intentional thresholds or indices.
       NumericLiteral(path: any) {
         const val = path.node.value;
-        if (val === 0 || val === 1 || val === -1) return;
+        if (Math.abs(val) < 100) return;
         const parent = path.parentPath?.node;
-        // allow in variable declarations and enums
-        if (t.isVariableDeclarator(parent) || t.isTSEnumMember(parent)) return;
+        // Skip all declarative / structural contexts
+        if (
+          t.isVariableDeclarator(parent) ||
+          t.isTSEnumMember(parent) ||
+          t.isObjectProperty(parent) ||
+          t.isAssignmentPattern(parent) ||
+          t.isArrayExpression(parent) ||
+          t.isReturnStatement(parent) ||
+          t.isBinaryExpression(parent) ||   // comparison thresholds: x > 100
+          t.isUnaryExpression(parent)        // negation: -200
+        ) return;
         const line = path.node.loc?.start.line || 0;
         push({
           id: `magic-num-${line}-${val}`, type: 'maintainability',

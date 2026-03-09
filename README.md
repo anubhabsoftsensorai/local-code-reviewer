@@ -1,4 +1,4 @@
-# Antigravity — Local Code Reviewer
+# GIT — Local Code Reviewer
 
 > A privacy-first Chrome extension that runs static code analysis entirely in your browser. No cloud, no telemetry, no data ever leaves your machine.
 
@@ -6,7 +6,7 @@
 
 ## What it does
 
-Antigravity injects a **Review** button into GitHub code views. Click it and the extension opens a side panel with a full analysis of the selected code — health score, metrics, and a list of violations with suggested fixes.
+GIT injects a **Review** button into GitHub code views. Click it and the extension opens a side panel with a full analysis of the selected code — health score, metrics, and a list of violations with suggested fixes.
 
 All analysis is performed locally using an AST engine built on Babel. Nothing is sent anywhere.
 
@@ -48,7 +48,7 @@ The extension icon will appear in your Chrome toolbar.
 
 ### 2. Open the side panel
 
-Click the **Antigravity** icon in your Chrome toolbar. This opens the side panel — keep it docked while you browse GitHub.
+Click the **GIT** icon in your Chrome toolbar. This opens the side panel — keep it docked while you browse GitHub.
 
 Alternatively: right-click the icon → **Open side panel**.
 

@@ -15,7 +15,7 @@
   "content_scripts": [
     {
       "js": [
-        "assets/index.ts-BPsxDsKp.js"
+        "assets/index.ts-CQ_ZGRJ-.js"
       ],
       "matches": [
         "<all_urls>"
@@ -39,7 +39,7 @@
         "<all_urls>"
       ],
       "resources": [
-        "assets/index.ts-BPsxDsKp.js"
+        "assets/index.ts-CQ_ZGRJ-.js"
       ],
       "use_dynamic_url": false
     }

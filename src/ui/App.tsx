@@ -4,9 +4,9 @@ import { Shield, Zap, Search, AlertTriangle, CheckCircle, Code2, Settings, Termi
 import { analyzeCode, ReviewResult, Issue } from '../engine/parser';
 
 const SEVERITY_CONFIG = {
-  error:   { color: '#f87171', glow: 'rgba(248,113,113,0.15)', bg: 'rgba(248,113,113,0.08)', label: 'Error' },
-  warning: { color: '#fbbf24', glow: 'rgba(251,191,36,0.15)',  bg: 'rgba(251,191,36,0.08)',  label: 'Warning' },
-  info:    { color: '#38bdf8', glow: 'rgba(56,189,248,0.15)',  bg: 'rgba(56,189,248,0.08)',  label: 'Info' },
+  error: { color: '#f87171', glow: 'rgba(248,113,113,0.15)', bg: 'rgba(248,113,113,0.08)', label: 'Error' },
+  warning: { color: '#fbbf24', glow: 'rgba(251,191,36,0.15)', bg: 'rgba(251,191,36,0.08)', label: 'Warning' },
+  info: { color: '#38bdf8', glow: 'rgba(56,189,248,0.15)', bg: 'rgba(56,189,248,0.08)', label: 'Info' },
 };
 
 const App = () => {
@@ -61,8 +61,8 @@ const App = () => {
   };
 
   const tabs = [
-    { label: 'All',      count: issues.length },
-    { label: 'Errors',   count: issues.filter(i => i.severity === 'error').length },
+    { label: 'All', count: issues.length },
+    { label: 'Errors', count: issues.filter(i => i.severity === 'error').length },
     { label: 'Warnings', count: issues.filter(i => i.severity === 'warning').length },
   ];
 
@@ -89,7 +89,7 @@ const App = () => {
               <Terminal size={17} />
             </div>
             <div>
-              <h1 className="brand-name">Antigravity</h1>
+              <h1 className="brand-name">GIT</h1>
               <span className="brand-sub">Standard Inspector</span>
             </div>
           </motion.div>

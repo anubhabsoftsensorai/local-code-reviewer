@@ -1,5 +1,3 @@
-console.log('Local Code Reviewer active on:', window.location.href);
-
 const findCodeBlocks = () => {
   const selectors = [
     '.react-code-text',
