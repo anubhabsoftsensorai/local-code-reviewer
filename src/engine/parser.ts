@@ -1,6 +1,11 @@
 import * as parser from '@babel/parser';
-import traverse from '@babel/traverse';
+import _traverse from '@babel/traverse';
 import * as t from '@babel/types';
+
+// Workaround for CJS/ESM compatibility with @babel/traverse in some bundlers
+const traverse = (typeof (_traverse as any).default === 'function') 
+  ? (_traverse as any).default 
+  : _traverse;
 
 export interface Issue {
   id: string;
@@ -62,7 +67,7 @@ const analyzeJSTS = (code: string, language: string): ReviewResult => {
 
     traverse(ast, {
       // 1. Long functions & complexity
-      Function(path) {
+      Function(path: any) {
         const { start, end } = path.node.loc || { start: { line: 0, column: 0 }, end: { line: 0, column: 0 } };
         const lineCount = end.line - start.line;
         if (lineCount > 50) {
@@ -102,7 +107,7 @@ const analyzeJSTS = (code: string, language: string): ReviewResult => {
       },
 
       // 2. Security issues
-      CallExpression(path) {
+      CallExpression(path: any) {
         if (t.isIdentifier(path.node.callee, { name: 'eval' })) {
           securityRisks++;
           issues.push({
@@ -116,7 +121,7 @@ const analyzeJSTS = (code: string, language: string): ReviewResult => {
         }
       },
 
-      AssignmentExpression(path) {
+      AssignmentExpression(path: any) {
         if (
           t.isMemberExpression(path.node.left) &&
           t.isIdentifier(path.node.left.property, { name: 'innerHTML' })
@@ -134,7 +139,7 @@ const analyzeJSTS = (code: string, language: string): ReviewResult => {
       },
 
       // 3. Unused variables (basic check)
-      VariableDeclarator(path) {
+      VariableDeclarator(path: any) {
         const id = path.node.id;
         if (t.isIdentifier(id)) {
           const binding = path.scope.getBinding(id.name);
@@ -153,7 +158,7 @@ const analyzeJSTS = (code: string, language: string): ReviewResult => {
       },
 
       // 5. var vs let/const
-      VariableDeclaration(path) {
+      VariableDeclaration(path: any) {
         if (path.node.kind === 'var') {
           issues.push({
             id: `var-usage-${path.node.loc?.start.line}`,
@@ -170,11 +175,11 @@ const analyzeJSTS = (code: string, language: string): ReviewResult => {
           });
         }
       },
-      ArrowFunctionExpression(path) {
+      ArrowFunctionExpression(path: any) {
         if (path.node.async && !t.isBlockStatement(path.node.body)) {
           // One-liner async might be fine but risky if not handled elsewhere
         } else if (path.node.async && t.isBlockStatement(path.node.body)) {
-          const hasTry = path.node.body.body.some(stmt => t.isTryStatement(stmt));
+          const hasTry = path.node.body.body.some((stmt: any) => t.isTryStatement(stmt));
           if (!hasTry) {
             issues.push({
               id: `missing-try-${path.node.loc?.start.line}`,

@@ -1,49 +1,41 @@
-console.log('Local Code Reviewer content script active');
+console.log('Local Code Reviewer active on:', window.location.href);
 
-// Function to find code blocks on the page
 const findCodeBlocks = () => {
-  // GitHub specific selectors
-  const githubCode = document.querySelectorAll('.blob-code-inner, .highlight pre, pre code');
+  // Support for Modern GitHub (React view), Standard Markdown, and Legacy view
+  const selectors = [
+    '.react-code-text',             // Modern GitHub file view
+    '.blob-code-inner',             // Legacy GitHub file view
+    '.markdown-body pre',           // READMEs and Issues
+    '.highlight pre',               // Common code highlighting
+    'pre code'                      // Standard code blocks
+  ];
+
+  const blocks = document.querySelectorAll(selectors.join(', '));
   
-  githubCode.forEach((block) => {
-    if ((block as HTMLElement).dataset.reviewerProcessed) return;
+  // Also try to find the GitHub File Header to put a "Review File" button there
+  injectToFileHeader();
+
+  blocks.forEach((block) => {
+    const htmlBlock = block as HTMLElement;
+    if (htmlBlock.dataset.reviewerProcessed) return;
     
-    // Add a small "Review" button overlay
-    const button = document.createElement('button');
-    button.innerText = '🔍 Review';
-    button.className = 'lcr-review-btn';
-    button.style.cssText = `
-      position: absolute;
-      right: 10px;
-      top: 5px;
-      z-index: 100;
-      background: #38bdf8;
-      color: black;
-      border: none;
-      border-radius: 4px;
-      padding: 2px 8px;
-      font-size: 10px;
-      cursor: pointer;
-      opacity: 0.7;
-      transition: opacity 0.2s;
-    `;
-    
-    button.onmouseover = () => button.style.opacity = '1';
-    button.onmouseout = () => button.style.opacity = '0.7';
-    
+    // For line-by-line views (like .react-code-text), we don't want a button on every line.
+    // We only want it on the container if it's a single block.
+    if (htmlBlock.classList.contains('react-code-text') || htmlBlock.classList.contains('blob-code-inner')) {
+      // If it's a line, maybe find the parent container?
+      // For now, let's focus on the header button for files and pre blocks for markdown.
+      if (!htmlBlock.closest('pre') && !htmlBlock.closest('.markdown-body')) {
+        return; 
+      }
+    }
+
+    const button = createReviewButton();
     button.onclick = (e) => {
       e.stopPropagation();
-      const code = (block as HTMLElement).innerText;
-      
-      // Open the side panel and send code
-      chrome.runtime.sendMessage({
-        type: 'REVIEW_CODE',
-        code: code,
-        language: detectLanguage(block)
-      });
+      sendReviewMessage(htmlBlock.innerText, detectLanguage(htmlBlock));
     };
     
-    const parent = block.parentElement;
+    const parent = htmlBlock.parentElement;
     if (parent) {
       if (getComputedStyle(parent).position === 'static') {
         parent.style.position = 'relative';
@@ -51,18 +43,104 @@ const findCodeBlocks = () => {
       parent.appendChild(button);
     }
     
-    (block as HTMLElement).dataset.reviewerProcessed = 'true';
+    htmlBlock.dataset.reviewerProcessed = 'true';
+  });
+};
+
+const injectToFileHeader = () => {
+  // Target the GitHub action bar (where Raw, Copy, etc. buttons are)
+  const actionBars = document.querySelectorAll('.react-blob-header-edit-and-raw-actions, [data-testid="file-action-bar"]');
+  
+  actionBars.forEach(bar => {
+    if ((bar as HTMLElement).dataset.reviewerProcessed) return;
+    
+    const container = document.createElement('div');
+    container.style.display = 'flex';
+    container.style.alignItems = 'center';
+    container.style.marginRight = '8px';
+
+    const button = document.createElement('button');
+    button.innerHTML = '🔍 Review File';
+    button.className = 'lcr-header-btn';
+    button.style.cssText = `
+      background: #0ea5e9;
+      color: white;
+      border: none;
+      border-radius: 6px;
+      padding: 3px 12px;
+      font-size: 12px;
+      font-weight: 600;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 4px;
+      transition: all 0.2s;
+    `;
+    
+    button.onmouseover = () => button.style.backgroundColor = '#0284c7';
+    button.onmouseout = () => button.style.backgroundColor = '#0ea5e9';
+    
+    button.onclick = () => {
+      // In modern GH (React view), code is split into many .react-code-text elements
+      const lines = document.querySelectorAll('.react-code-text');
+      if (lines.length > 0) {
+        const fullCode = Array.from(lines).map(l => (l as HTMLElement).innerText).join('\n');
+        sendReviewMessage(fullCode, detectLanguage(lines[0]));
+      } else {
+        // Fallback for legacy view
+        const codeContainer = document.querySelector('.blob-wrapper, .blob-code-inner');
+        if (codeContainer) {
+          sendReviewMessage((codeContainer as HTMLElement).innerText, detectLanguage(codeContainer));
+        }
+      }
+    };
+    
+    container.appendChild(button);
+    bar.prepend(container);
+    (bar as HTMLElement).dataset.reviewerProcessed = 'true';
+  });
+};
+
+const createReviewButton = () => {
+  const button = document.createElement('button');
+  button.innerText = '🔍 Review';
+  button.className = 'lcr-review-btn';
+  button.style.cssText = `
+    position: absolute;
+    right: 10px;
+    top: 5px;
+    z-index: 100;
+    background: #0ea5e9;
+    color: white;
+    border: none;
+    border-radius: 4px;
+    padding: 2px 8px;
+    font-size: 10px;
+    font-weight: bold;
+    cursor: pointer;
+    opacity: 0.6;
+    transition: opacity 0.2s;
+  `;
+  button.onmouseover = () => button.style.opacity = '1';
+  button.onmouseout = () => button.style.opacity = '0.6';
+  return button;
+};
+
+const sendReviewMessage = (code: string, language: string) => {
+  chrome.runtime.sendMessage({
+    type: 'REVIEW_CODE',
+    code: code,
+    language: language
   });
 };
 
 const detectLanguage = (el: Element): string => {
-  // Try to detect language from class names or context
-  const text = el.className + ' ' + (el.parentElement?.className || '');
-  if (text.includes('javascript') || text.includes('js')) return 'javascript';
-  if (text.includes('typescript') || text.includes('ts')) return 'typescript';
-  if (text.includes('python') || text.includes('py')) return 'python';
-  if (text.includes('json')) return 'json';
-  return 'javascript'; // Default
+  const text = el.className + ' ' + (el.parentElement?.className || '') + ' ' + window.location.pathname;
+  if (text.toLowerCase().match(/\.(js|jsx|mjs|cjs)$/) || text.includes('javascript')) return 'javascript';
+  if (text.toLowerCase().match(/\.(ts|tsx)$/) || text.includes('typescript')) return 'typescript';
+  if (text.toLowerCase().match(/\.(py)$/) || text.includes('python')) return 'python';
+  if (text.toLowerCase().match(/\.(json)$/) || text.includes('json')) return 'json';
+  return 'javascript';
 };
 
 // Initial run

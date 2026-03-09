@@ -10,15 +10,37 @@ const App = () => {
   const [currentLanguage, setCurrentLanguage] = useState('javascript');
 
   useEffect(() => {
-    // Listen for code review requests from content script
-    const listener = (message: any) => {
+    // 1. Check for initial code from storage (transferred via background script)
+    chrome.storage.local.get(['pendingReview'], (result: any) => {
+      if (result.pendingReview) {
+        performAnalysis(result.pendingReview.code, result.pendingReview.language);
+        chrome.storage.local.remove('pendingReview');
+      }
+    });
+
+    // 2. Listen for code review messages while panel is already open
+    const messageListener = (message: any) => {
       if (message.type === 'REVIEW_CODE') {
         performAnalysis(message.code, message.language);
       }
     };
+    
+    // 3. Listen for storage changes if background updates storage while panel is open
+    const storageListener = (changes: { [key: string]: chrome.storage.StorageChange }) => {
+      const val = (changes as any).pendingReview?.newValue;
+      if (val) {
+        performAnalysis(val.code, val.language);
+        chrome.storage.local.remove('pendingReview');
+      }
+    };
 
-    chrome.runtime.onMessage.addListener(listener);
-    return () => chrome.runtime.onMessage.removeListener(listener);
+    chrome.runtime.onMessage.addListener(messageListener);
+    chrome.storage.onChanged.addListener(storageListener);
+    
+    return () => {
+      chrome.runtime.onMessage.removeListener(messageListener);
+      chrome.storage.onChanged.removeListener(storageListener);
+    };
   }, []);
 
   const performAnalysis = (code: string, language: any) => {

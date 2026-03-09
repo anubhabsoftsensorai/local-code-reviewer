@@ -1,0 +1,47 @@
+{
+  "manifest_version": 3,
+  "name": "Local Code Reviewer",
+  "version": "1.0.0",
+  "description": "Static code analysis and suggestions directly in your browser. No cloud, 100% local.",
+  "permissions": [
+    "activeTab",
+    "sidePanel",
+    "storage"
+  ],
+  "background": {
+    "service_worker": "service-worker-loader.js",
+    "type": "module"
+  },
+  "content_scripts": [
+    {
+      "js": [
+        "assets/index.ts-o-b1DzEx.js"
+      ],
+      "matches": [
+        "<all_urls>"
+      ]
+    }
+  ],
+  "action": {
+    "default_title": "Open Code Reviewer"
+  },
+  "side_panel": {
+    "default_path": "index.html"
+  },
+  "icons": {
+    "16": "src/assets/icon16.png",
+    "48": "src/assets/icon48.png",
+    "128": "src/assets/icon128.png"
+  },
+  "web_accessible_resources": [
+    {
+      "matches": [
+        "<all_urls>"
+      ],
+      "resources": [
+        "assets/index.ts-o-b1DzEx.js"
+      ],
+      "use_dynamic_url": false
+    }
+  ]
+}
